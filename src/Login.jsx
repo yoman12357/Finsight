@@ -1,5 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { supabase } from './supabaseClient.js';
+import {
+    signInWithPopup,
+    createUserWithEmailAndPassword,
+    signInWithEmailAndPassword,
+    updateProfile
+} from "firebase/auth";
+import { doc, setDoc } from "firebase/firestore";
+import { auth, provider, db } from './firebase';
 import './Login.css';
 
 const Login = () => {
@@ -29,40 +36,55 @@ const Login = () => {
         });
     };
 
+    const handleGoogleLogin = async () => {
+        setLoading(true);
+        try {
+            const result = await signInWithPopup(auth, provider);
+            const user = result.user;
+
+            await setDoc(doc(db, "users", user.uid), {
+                username: user.displayName,
+                email: user.email,
+                photoURL: user.photoURL,
+                lastLogin: new Date()
+            }, { merge: true });
+
+            console.log("Google Login Success:", user);
+        } catch (error) {
+            console.error(error);
+            alert(error.message);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
 
         try {
             if (isLogin) {
-                const { data, error } = await supabase.auth.signInWithPassword({
-                    email: formData.email,
-                    password: formData.password,
-                });
+                const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
+                const user = userCredential.user;
 
-                if (error) throw error;
-
-
-                console.log("Login User Data:", data);
-                alert("Login Successful! Check console for user data.");
-
+                await setDoc(doc(db, "users", user.uid), {
+                    lastLogin: new Date()
+                }, { merge: true });
+                console.log("Login User Data:", user);
             } else {
-                const { data, error } = await supabase.auth.signUp({
+                const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
+                const user = userCredential.user;
+
+                await updateProfile(user, { displayName: formData.username });
+                await setDoc(doc(db, "users", user.uid), {
+                    username: formData.username,
                     email: formData.email,
-                    password: formData.password,
-                    options: {
-                        data: {
-                            username: formData.username,
-                        }
-                    }
+                    createdAt: new Date()
                 });
-
-                if (error) throw error;
-
-                alert('Signup Successful! Please check your email to verify your account.');
-                setIsLogin(true);
+                alert('Signup Successful!');
             }
         } catch (error) {
+            console.error(error);
             alert(error.message);
         } finally {
             setLoading(false);
@@ -104,22 +126,16 @@ const Login = () => {
                 <div className="branding-section">
                     <div className="brand-content">
                         <div className="brand-logo-placeholder">
-                            <div className="logo-hexagon">
-
-                            </div>
+                            <div className="logo-hexagon"></div>
                         </div>
-
                         <h1 className="brand-title">
                             <span className="title-fin">Fin</span>
                             <span className="title-sight">Sight</span>
                         </h1>
-
                         <p className="brand-tagline">Smart Wallet & Expense Analyzer</p>
-
                         <div className="brand-description">
                             <p>Experience the future of financial management</p>
                         </div>
-
                         <div className="floating-elements">
                             <div className="float-element float-1"></div>
                             <div className="float-element float-2"></div>
@@ -249,7 +265,7 @@ const Login = () => {
                             </div>
 
                             <div className="social-login">
-                                <button type="button" className="social-btn">
+                                <button type="button" onClick={handleGoogleLogin} className="social-btn">
                                     <svg viewBox="0 0 24 24" className="social-icon">
                                         <path fill="currentColor" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" />
                                         <path fill="currentColor" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" />
