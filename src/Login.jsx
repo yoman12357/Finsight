@@ -36,7 +36,7 @@ const Login = () => {
             const token = await user.getIdToken();
 
             // Send to your backend running on port 5000
-            await fetch('http://localhost:5000/api/save-user-data', {
+            await fetch('https://finsight-td0z.onrender.com/api/save-user-data', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
