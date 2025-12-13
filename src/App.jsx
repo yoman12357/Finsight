@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import Login from './Login.jsx';
-import { auth, db } from './firebase'; // Ensure this path is correct based on your folder
+import { auth, db } from './firebase';
 import { onAuthStateChanged, signOut } from 'firebase/auth';
 import { doc, getDoc } from 'firebase/firestore';
 
@@ -30,20 +30,17 @@ function App() {
     signOut(auth);
   };
 
-  // --- NEW FUNCTION TO CALL YOUR BACKEND ---
   const callBackend = async () => {
     if (!user) return;
 
-    // 1. Get the secure Token
     const token = await user.getIdToken();
 
-    // 2. Send data to your local Express server
     try {
       const response = await fetch('http://localhost:5000/api/save-user-data', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}` // Send token for verification
+          'Authorization': `Bearer ${token}`
         },
         body: JSON.stringify({
           note: "This data is coming from React!",
@@ -52,7 +49,7 @@ function App() {
       });
 
       const result = await response.json();
-      alert(result.message); // Should say "Success!..."
+      alert(result.message);
       console.log(result);
     } catch (error) {
       console.error("Backend Error:", error);
