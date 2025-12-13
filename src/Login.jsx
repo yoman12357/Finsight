@@ -29,6 +29,31 @@ const Login = () => {
         setParticles(particleArray);
     }, []);
 
+    // --- NEW FUNCTION: Send data to your Node.js Backend ---
+    const sendDataToBackend = async (user, username) => {
+        try {
+            // Get the secure token from Firebase
+            const token = await user.getIdToken();
+
+            // Send to your backend running on port 5000
+            await fetch('http://localhost:5000/api/save-user-data', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}` // Send token for security
+                },
+                body: JSON.stringify({
+                    email: user.email,
+                    username: username || user.displayName || "User"
+                })
+            });
+            console.log("Data sent to backend successfully!");
+        } catch (error) {
+            console.error("Failed to send data to backend:", error);
+        }
+    };
+    // -------------------------------------------------------
+
     const handleInputChange = (e) => {
         setFormData({
             ...formData,
@@ -49,6 +74,9 @@ const Login = () => {
                 lastLogin: new Date()
             }, { merge: true });
 
+            // Call Backend
+            await sendDataToBackend(user, user.displayName);
+
             console.log("Google Login Success:", user);
         } catch (error) {
             console.error(error);
@@ -64,23 +92,34 @@ const Login = () => {
 
         try {
             if (isLogin) {
+                // LOGIN LOGIC
                 const userCredential = await signInWithEmailAndPassword(auth, formData.email, formData.password);
                 const user = userCredential.user;
 
                 await setDoc(doc(db, "users", user.uid), {
                     lastLogin: new Date()
                 }, { merge: true });
-                console.log("Login User Data:", user);
+
+                // Call Backend (Use displayName from firebase or 'User' if not set)
+                await sendDataToBackend(user, user.displayName);
+
             } else {
+                // SIGNUP LOGIC
                 const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
                 const user = userCredential.user;
 
+                // Update Profile with Username
                 await updateProfile(user, { displayName: formData.username });
+
                 await setDoc(doc(db, "users", user.uid), {
                     username: formData.username,
                     email: formData.email,
                     createdAt: new Date()
                 });
+
+                // Call Backend
+                await sendDataToBackend(user, formData.username);
+
                 alert('Signup Successful!');
             }
         } catch (error) {

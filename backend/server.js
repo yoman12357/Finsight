@@ -1,0 +1,46 @@
+const express = require('express');
+const admin = require('firebase-admin');
+const cors = require('cors');
+
+// Initialize Firebase Admin
+// Ensure 'serviceAccountKey.json' is in the same folder!
+const serviceAccount = require('./serviceAccountKey.json');
+
+admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount)
+});
+
+const app = express();
+app.use(cors());
+app.use(express.json());
+
+// Middleware to Verify Token
+const verifyToken = async (req, res, next) => {
+    const token = req.headers.authorization?.split(' ')[1];
+
+    if (!token) {
+        return res.status(401).send("Unauthorized: No token provided");
+    }
+
+    try {
+        const decodedToken = await admin.auth().verifyIdToken(token);
+        req.user = decodedToken;
+        next();
+    } catch (error) {
+        return res.status(403).send("Unauthorized: Invalid token");
+    }
+};
+
+// Route to receive Login/Signup data
+app.post('/api/save-user-data', verifyToken, (req, res) => {
+    // This will print the data in your VS Code terminal (Backend)
+    console.log("------------------------------------------------");
+    console.log("🚀 NEW USER ACTIVITY DETECTED");
+    console.log("📧 Email:", req.body.email);
+    console.log("👤 Username:", req.body.username);
+    console.log("------------------------------------------------");
+
+    res.json({ message: "Backend received user data successfully" });
+});
+
+app.listen(5000, () => console.log("🚀 Server running on http://localhost:5000"));
