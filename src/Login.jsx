@@ -20,7 +20,10 @@ const Login = () => {
     const [particles, setParticles] = useState([]);
 
     useEffect(() => {
-        const particleArray = Array.from({ length: 50 }, (_, i) => ({
+        const isMobile = window.innerWidth < 768;
+
+        const particleCount = isMobile ? 10 : 50;
+        const particleArray = Array.from({ length: particleCount }, (_, i) => ({
             id: i,
             left: Math.random() * 100,
             animationDuration: 3 + Math.random() * 5,
