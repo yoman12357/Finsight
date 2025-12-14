@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import isStrongPassword from 'aryan-password-checker';
 import {
     signInWithPopup,
     createUserWithEmailAndPassword,
@@ -12,6 +13,8 @@ import './Login.css';
 const Login = () => {
     const [isLogin, setIsLogin] = useState(true);
     const [loading, setLoading] = useState(false);
+    const [passwordError, setPasswordError] = useState('');
+
     const [formData, setFormData] = useState({
         email: '',
         password: '',
@@ -54,6 +57,7 @@ const Login = () => {
     };
 
     const handleInputChange = (e) => {
+        setPasswordError('');
         setFormData({
             ...formData,
             [e.target.name]: e.target.value
@@ -87,6 +91,7 @@ const Login = () => {
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
+        setPasswordError('');
 
         try {
             if (isLogin) {
@@ -100,6 +105,15 @@ const Login = () => {
                 await sendDataToBackend(user, user.displayName);
 
             } else {
+
+                const securityCheck = isStrongPassword(formData.password);
+
+                if (!securityCheck.valid) {
+                    setPasswordError(securityCheck.message);
+                    setLoading(false);
+                    return;
+                }
+
                 const userCredential = await createUserWithEmailAndPassword(auth, formData.email, formData.password);
                 const user = userCredential.user;
 
@@ -125,9 +139,9 @@ const Login = () => {
 
     const toggleMode = () => {
         setIsLogin(!isLogin);
+        setPasswordError('');
         setFormData({ email: '', password: '', username: '' });
     };
-
     return (
         <div className="login-container">
             <div className="particle-field">
@@ -258,6 +272,11 @@ const Login = () => {
                                             </svg>
                                         </div>
                                     </div>
+                                    {passwordError && (
+                                        <div style={{ color: '#ff4444', fontSize: '12px', marginTop: '5px', textAlign: 'left', paddingLeft: '5px' }}>
+                                            ⚠️ {passwordError}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {isLogin && (

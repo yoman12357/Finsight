@@ -38,4 +38,4 @@ app.post('/api/save-user-data', verifyToken, (req, res) => {
     res.json({ message: "Backend received user data successfully" });
 });
 
-app.listen(5000, () => console.log("🚀 Server running on http://localhost:5000"));
+app.listen(5000, () => console.log("🚀 Server running on my server"));
